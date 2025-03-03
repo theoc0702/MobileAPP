@@ -3,7 +3,7 @@
 Avoir node.js installé <br>
 Avoir Expo CLI installé
 
-Démarrer l'application avec 
+Démarrer l'application avec :
 ```
 npm run start
 ```
