@@ -1,6 +1,6 @@
 # Pour lancer l'application
 
-Avoir node.js installé
+Avoir node.js installé <br>
 Avoir Expo CLI installé
 
 Démarrer l'application avec 
