@@ -1,204 +1,136 @@
-// App.tsx
-import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Text, ScrollView, Alert, Pressable } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import React, { useState } from "react";
+import { View, Text, TextInput, FlatList, TouchableOpacity, Button, Alert } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-interface Service {
-  id: string;
-  name: string;
-  price: number;
-}
-
-interface Appointment {
-  id: number;
-  name: string;
-  phone: string;
-  date: string;
-  service: Service;
-}
-
-const SERVICES: Service[] = [
-  { id: 'homme', name: 'Coupe Homme', price: 20 },
-  { id: 'femme', name: 'Coupe Femme', price: 50 },
-  { id: 'homme-barbe', name: 'Coupe Homme + Barbe', price: 35 },
+const businesses = [
+  { id: 1, name: "Coiffure Elégance", services: ["Coupe Homme", "Coupe Femme"] },
+  { id: 2, name: "Institut Beauté Zen", services: ["Massage", "Soins visage"] },
+  { id: 3, name: "Barber Shop", services: ["Rasage", "Dégradé"] },
 ];
 
 export default function App() {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [search, setSearch] = useState("");
+  const [filteredBusinesses, setFilteredBusinesses] = useState(businesses);
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [appointments, setAppointments] = useState([]);
+  const [viewAppointments, setViewAppointments] = useState(false);
 
-  const showDatePicker = () => {
-    setDatePickerVisible(true);
+  const handleSearch = (text) => {
+    setSearch(text);
+    setFilteredBusinesses(
+      businesses.filter((b) => b.name.toLowerCase().includes(text.toLowerCase()))
+    );
   };
 
-  const hideDatePicker = () => {
-    setDatePickerVisible(false);
-  };
-
-  const handleConfirm = (selectedDate: Date) => {
-    setDate(selectedDate);
-    hideDatePicker();
-  };
-
-  const handleSubmit = () => {
-    if (!name || !phone || !selectedService) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs et sélectionner un service');
-      return;
-    }
-
-    const newAppointment: Appointment = {
-      id: Date.now(),
-      name,
-      phone,
-      date: date.toLocaleString('fr-FR'),
-      service: selectedService,
-    };
-
-    setAppointments(prevAppointments => [...prevAppointments, newAppointment]);
-    setName('');
-    setPhone('');
-    setDate(new Date());
+  const handleSelectAppointment = () => {
+    setAppointments([...appointments, { business: selectedBusiness.name, service: selectedService, date }]);
     setSelectedService(null);
-    Alert.alert('Succès', 'Rendez-vous enregistré');
+    setSelectedBusiness(null);
+    Alert.alert("Succès", "Votre rendez-vous a bien été enregistré.");
+  };
+
+  const handleCancelAppointment = (index) => {
+    Alert.alert("Confirmation", "Êtes-vous sûr de vouloir annuler ce rendez-vous ?", [
+      { text: "Non", style: "cancel" },
+      { text: "Oui", onPress: () => {
+          const newAppointments = appointments.filter((_, i) => i !== index);
+          setAppointments(newAppointments);
+          Alert.alert("Annulé", "Votre rendez-vous a bien été annulé.");
+        }
+      }
+    ]);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Salon de Coiffure</Text>
-      
-      <Text style={styles.subtitle}>Sélectionnez un service :</Text>
-      <View style={styles.serviceContainer}>
-        {SERVICES.map((service) => (
-          <Pressable
-            key={service.id}
-            style={[
-              styles.serviceButton,
-              selectedService?.id === service.id && styles.serviceButtonSelected
-            ]}
-            onPress={() => setSelectedService(service)}
-          >
-            <Text style={[
-              styles.serviceButtonText,
-              selectedService?.id === service.id && styles.serviceButtonTextSelected
-            ]}>
-              {service.name} - {service.price}€
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nom"
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Téléphone"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
-
-      <Button 
-        title="Sélectionner la date et l'heure"
-        onPress={showDatePicker}
-      />
-
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="datetime"
-        onConfirm={handleConfirm}
-        onCancel={hideDatePicker}
-        locale="fr-FR"
-      />
-
-      <Text style={styles.dateText}>
-        Date sélectionnée: {date.toLocaleString('fr-FR')}
-      </Text>
-
-      <Button title="Enregistrer" onPress={handleSubmit} />
-
-      <ScrollView style={styles.appointmentList}>
-        <Text style={styles.subtitle}>Rendez-vous enregistrés:</Text>
-        {appointments.map((apt: Appointment) => (
-          <View key={apt.id} style={styles.appointmentItem}>
-            <Text>Nom: {apt.name}</Text>
-            <Text>Téléphone: {apt.phone}</Text>
-            <Text>Service: {apt.service.name} - {apt.service.price}€</Text>
-            <Text>Date: {apt.date}</Text>
-          </View>
-        ))}
-      </ScrollView>
+    <View style={{ padding: 20 }}>
+      {viewAppointments ? (
+        <>
+          <TouchableOpacity onPress={() => setViewAppointments(false)} style={{ marginBottom: 10 }}>
+            <Text style={{ color: 'blue' }}>← Retour</Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Mes Rendez-vous</Text>
+          <FlatList
+            data={appointments}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <View style={{ padding: 10, borderBottomWidth: 1 }}>
+                <Text>{item.business} - {item.service}</Text>
+                <Text>{item.date.toLocaleString()}</Text>
+                <Button title="Annuler" onPress={() => handleCancelAppointment(index)} color="red" />
+              </View>
+            )}
+          />
+        </>
+      ) : !selectedBusiness ? (
+        <>
+          <Button title="Voir mes rendez-vous" onPress={() => setViewAppointments(true)} />
+          <TextInput
+            placeholder="Rechercher un commerçant..."
+            value={search}
+            onChangeText={handleSearch}
+            style={{ borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 }}
+          />
+          <FlatList
+            data={filteredBusinesses}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={{ padding: 10, borderBottomWidth: 1 }}
+                onPress={() => setSelectedBusiness(item)}
+              >
+                <Text>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </>
+      ) : !selectedService ? (
+        <View>
+          <TouchableOpacity onPress={() => setSelectedBusiness(null)} style={{ marginBottom: 10 }}>
+            <Text style={{ color: 'blue' }}>← Retour</Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            {selectedBusiness.name}
+          </Text>
+          <FlatList
+            data={selectedBusiness.services}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={{ padding: 10, borderBottomWidth: 1 }}
+                onPress={() => setSelectedService(item)}
+              >
+                <Text>{item}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity onPress={() => setSelectedService(null)} style={{ marginBottom: 10 }}>
+            <Text style={{ color: 'blue' }}>← Retour</Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            {selectedService}
+          </Text>
+          <Button title="Choisir une date et un horaire" onPress={() => setShowPicker(true)} />
+          {showPicker && (
+            <DateTimePicker
+              value={date}
+              mode="datetime"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowPicker(false);
+                if (selectedDate) setDate(selectedDate);
+              }}
+            />
+          )}
+          <Text style={{ marginTop: 10 }}>Date et heure sélectionnées : {date.toLocaleString()}</Text>
+          <Button title="Sélectionner cet horaire" onPress={handleSelectAppointment} />
+        </View>
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    marginTop: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  dateText: {
-    marginVertical: 10,
-    textAlign: 'center',
-  },
-  appointmentList: {
-    marginTop: 20,
-  },
-  appointmentItem: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  serviceContainer: {
-    marginBottom: 20,
-  },
-  serviceButton: {
-    padding: 15,
-    marginVertical: 5,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  serviceButtonSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  serviceButtonText: {
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  serviceButtonTextSelected: {
-    color: 'white',
-  },
-});
